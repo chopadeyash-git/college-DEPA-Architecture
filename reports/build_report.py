@@ -1,4 +1,7 @@
+from copy import deepcopy
+from io import BytesIO
 from pathlib import Path
+from zipfile import ZipFile
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -11,6 +14,7 @@ ROOT = Path(r"C:\Users\DELL\OneDrive\Desktop\Final_year_PJ-main")
 OUT = ROOT / "reports"
 OUT.mkdir(exist_ok=True)
 DOCX = OUT / "DEPA_Academic_Credential_Exchange_Project_Report.docx"
+REFERENCE_DOCX = Path(r"C:\Users\DELL\OneDrive\Documents\TEAM_!_DE9.docx")
 NAVY, BLUE, PALE, LIGHT, WHITE = "17365D", "1F4E79", "D9EAF7", "F2F6FA", "FFFFFF"
 
 
@@ -216,18 +220,18 @@ for item in [
     "2. Software Requirements Specification ......................................... 8",
     "3. Related Concepts and Design Rationale ..................................... 10",
     "4. System Architecture and Workflow ............................................. 11",
-    "5. Database Design and Data Model ............................................... 12",
-    "6. Implementation, Testing, and Results ........................................ 13",
-    "7. User Manual and Operations ..................................................... 17",
-    "8. Conclusion, Limitations, and Future Work ................................. 18",
-    "References ................................................................................... 19",
-    "Appendix A: Module Directory ....................................................... 20",
-    "Appendix B: Selected API Groups .................................................. 20",
-    "Appendix C: Verification Snapshot ................................................ 20",
+    "5. Database Design and Data Model ............................................... 16",
+    "6. Implementation, Testing, and Results ........................................ 17",
+    "7. User Manual and Operations ..................................................... 21",
+    "8. Conclusion, Limitations, and Future Work ................................. 22",
+    "References ................................................................................... 23",
+    "Appendix A: Module Directory ....................................................... 24",
+    "Appendix B: Selected API Groups .................................................. 24",
+    "Appendix C: Verification Snapshot ................................................ 24",
 ]:
     para(doc, item)
 heading(doc, "LIST OF FIGURES", 2)
-para(doc, "Figure 1. Consent Manager interface (illustrative repository capture)\nFigure 2. College A provider interface (illustrative repository capture)\nFigure 3. College B consumer interface (illustrative repository capture)")
+para(doc, "Figure 1. DEPA-Based Consent Manager system architecture diagram\nFigure 2. DEPA-Based Consent Manager workflow diagram\nFigure 3. Consent Manager interface (illustrative repository capture)\nFigure 4. College A provider interface (illustrative repository capture)\nFigure 5. College B consumer interface (illustrative repository capture)")
 heading(doc, "LIST OF TABLES", 2)
 para(doc, "Tables cover team members, requirements, service responsibilities, data entities, test results, deployment ports, and operating procedures.")
 
@@ -435,9 +439,9 @@ for x in [
 heading(doc, "6.5 Interface Captures", 2)
 para(doc, "The following repository-provided portal captures are interface references. Dashboard counts and names are illustrative UI content, not runtime measurements or test results.")
 for title, filename in [
-    ("Figure 1. Consent Manager interface (illustrative repository capture)", "cm-full-height.png"),
-    ("Figure 2. College A provider interface (illustrative repository capture)", "col-a-full-height.png"),
-    ("Figure 3. College B consumer interface (illustrative repository capture)", "col-b-full-height.png"),
+    ("Figure 3. Consent Manager interface (illustrative repository capture)", "cm-full-height.png"),
+    ("Figure 4. College A provider interface (illustrative repository capture)", "col-a-full-height.png"),
+    ("Figure 5. College B consumer interface (illustrative repository capture)", "col-b-full-height.png"),
 ]:
     page(doc)
     para(doc, title, WD_ALIGN_PARAGRAPH.CENTER)
@@ -570,4 +574,150 @@ doc.core_properties.subject = "DEPA-inspired academic consent and credential sha
 doc.core_properties.author = "ANITS CSE Project Team"
 doc.core_properties.keywords = "DEPA, consent, academic credentials, College A, College B"
 doc.save(DOCX)
+
+
+def element_text(element):
+    return "".join(element.xpath(".//w:t/text()")).strip()
+
+
+def replace_paragraph_text(paragraph, text, font_size=12):
+    paragraph.clear()
+    run = paragraph.add_run(text)
+    run.font.name = "Times New Roman"
+    run.font.size = Pt(font_size)
+
+
+def apply_reference_front_matter():
+    current = Document(DOCX)
+    reference = Document(REFERENCE_DOCX)
+
+    current_paragraphs = current.paragraphs
+    current_abstract_start = next(
+        i for i, p in enumerate(current_paragraphs) if p.text.strip() == "ABSTRACT"
+    ) + 1
+    current_contents_start = next(
+        i for i, p in enumerate(current_paragraphs) if p.text.strip() == "TABLE OF CONTENTS"
+    )
+    abstract_text = [
+        p.text.strip()
+        for p in current_paragraphs[current_abstract_start:current_contents_start]
+        if p.text.strip()
+    ]
+    current_main, current_keywords = abstract_text[:-1], abstract_text[-1]
+
+    reference_paragraphs = reference.paragraphs
+    reference_abstract_start = next(
+        i for i, p in enumerate(reference_paragraphs) if p.text.strip() == "ABSTRACT"
+    ) + 1
+    reference_contents_start = next(
+        i for i, p in enumerate(reference_paragraphs) if p.text.strip() == "TABLE OF CONTENTS"
+    )
+    reference_abstract = [
+        p for p in reference_paragraphs[reference_abstract_start:reference_contents_start]
+        if p.text.strip()
+    ]
+    reference_main, reference_keywords = reference_abstract[:-1], reference_abstract[-1]
+    for paragraph, text in zip(reference_main, current_main):
+        replace_paragraph_text(paragraph, text)
+    for paragraph in reference_main[len(current_main):]:
+        paragraph._p.getparent().remove(paragraph._p)
+    replace_paragraph_text(reference_keywords, current_keywords)
+
+    reference_body = reference.element.body
+    current_body = current.element.body
+    reference_children = list(reference_body)
+    current_children = list(current_body)
+    reference_toc = next(
+        i for i, child in enumerate(reference_children)
+        if child.tag.endswith("}p") and element_text(child) == "TABLE OF CONTENTS"
+    )
+    current_toc = next(
+        i for i, child in enumerate(current_children)
+        if child.tag.endswith("}p") and element_text(child) == "TABLE OF CONTENTS"
+    )
+    for child in reference_children[reference_toc:]:
+        if child.tag.endswith("}sectPr"):
+            continue
+        reference_body.remove(child)
+
+    relationship_namespace = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
+    relationship_map = {}
+    copied_children = [deepcopy(child) for child in current_children[current_toc:]
+                       if not child.tag.endswith("}sectPr")]
+    for child in copied_children:
+        for element in child.iter():
+            for attribute, relationship_id in list(element.attrib.items()):
+                if not attribute.startswith(relationship_namespace):
+                    continue
+                if relationship_id in relationship_map:
+                    element.set(attribute, relationship_map[relationship_id])
+                    continue
+                relationship = current.part.rels[relationship_id]
+                if relationship.is_external:
+                    new_id = reference.part.relate_to(
+                        relationship.target_ref,
+                        relationship.reltype,
+                        is_external=True,
+                    )
+                elif relationship.reltype.endswith("/image"):
+                    new_id, _ = reference.part.get_or_add_image(
+                        BytesIO(relationship.target_part.blob)
+                    )
+                else:
+                    raise ValueError(
+                        f"Unsupported copied relationship: {relationship.reltype}"
+                    )
+                relationship_map[relationship_id] = new_id
+                element.set(attribute, new_id)
+
+    for child in copied_children:
+        reference_body.insert(len(reference_body) - 1, child)
+
+    reference.core_properties.title = current.core_properties.title
+    reference.core_properties.subject = current.core_properties.subject
+    reference.core_properties.author = current.core_properties.author
+    reference.core_properties.keywords = current.core_properties.keywords
+    reference.save(DOCX)
+
+
+def add_reference_diagrams():
+    report = Document(DOCX)
+    with ZipFile(REFERENCE_DOCX) as source:
+        architecture = source.read("word/media/image12.png")
+        workflow = source.read("word/media/image13.png")
+
+    paragraphs = report.paragraphs
+    workflow_heading = next(
+        p for p in paragraphs if p.text.strip() == "4.2 End-to-End Workflow"
+    )
+    trust_heading = next(
+        p for p in paragraphs if p.text.strip() == "4.3 Trust Artifacts"
+    )
+
+    architecture_paragraph = workflow_heading.insert_paragraph_before()
+    architecture_paragraph.paragraph_format.page_break_before = True
+    architecture_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    architecture_paragraph.add_run().add_picture(BytesIO(architecture), width=Inches(4.5))
+    caption = workflow_heading.insert_paragraph_before(
+        "Figure 1. DEPA-Based Consent Manager system architecture diagram (reused from the supplied project report)."
+    )
+    caption.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    caption.paragraph_format.keep_with_next = True
+    workflow_heading.paragraph_format.page_break_before = True
+
+    workflow_paragraph = trust_heading.insert_paragraph_before()
+    workflow_paragraph.paragraph_format.page_break_before = True
+    workflow_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    workflow_paragraph.add_run().add_picture(BytesIO(workflow), width=Inches(4.5))
+    caption = trust_heading.insert_paragraph_before(
+        "Figure 2. DEPA-Based Consent Manager workflow diagram (reused from the supplied project report)."
+    )
+    caption.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    caption.paragraph_format.keep_with_next = True
+
+    report.save(DOCX)
+
+
+apply_reference_front_matter()
+add_reference_diagrams()
 print(f"Created {DOCX} ({DOCX.stat().st_size} bytes)")

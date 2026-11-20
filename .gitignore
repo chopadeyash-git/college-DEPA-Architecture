@@ -56,3 +56,5 @@ maven/
 edge-temp/
 reports/edge-temp/
 screenshots/temp_*.html
+__pycache__/
+*.pyc

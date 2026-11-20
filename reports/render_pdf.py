@@ -20,14 +20,30 @@ def image_html(run):
         part = doc.part.related_parts[rid]
         data = base64.b64encode(part.blob).decode("ascii")
         mime = part.content_type or "image/png"
-        out.append(f'<img class="figure" src="data:{mime};base64,{data}">')
+        extents = run._r.xpath(".//wp:extent")
+        style = ""
+        if extents:
+            width_inches = int(extents[0].get("cx")) / 914400
+            style = f' style="width:{width_inches:.2f}in;height:auto"'
+        out.append(f'<img class="figure"{style} src="data:{mime};base64,{data}">')
     return "".join(out)
 
 
 def paragraph_html(p):
     style = p.style.name if p.style else "Normal"
+    text_value = p.text.strip()
     if p._p.xpath('.//w:br[@w:type="page"]'):
         return '<div class="pagebreak"></div>'
+    page_break_before = bool(p._p.xpath(".//w:pageBreakBefore")) or (
+        style.startswith("Heading 1")
+        and text_value in {
+            "BONAFIDE CERTIFICATE",
+            "ACKNOWLEDGEMENT",
+            "DECLARATION",
+            "ABSTRACT",
+            "TABLE OF CONTENTS",
+        }
+    )
     parts = []
     for run in p.runs:
         text = html.escape(run.text).replace("\n", "<br>")
@@ -58,6 +74,8 @@ def paragraph_html(p):
         tag, css = "p", "right"
     else:
         tag, css = "p", ""
+    if page_break_before:
+        css = f"{css} break-before".strip()
     return f'<{tag} class="{css}">{body}</{tag}>'
 
 
@@ -108,6 +126,7 @@ h3 { color: #1F4E79; font-size: 10.5pt; margin: 8pt 0 4pt; page-break-after: avo
 .right { text-align: right; }
 .bullet, .numbered { margin-left: 18pt; }
 .pagebreak { break-before: page; page-break-before: always; height: 0; }
+.break-before { break-before: page; page-break-before: always; }
 .grid { width: 100%; border-collapse: collapse; margin: 6pt 0 10pt; font-size: 8.5pt; table-layout: auto; }
 .grid td, .grid th { border: 1px solid #8796A5; padding: 4pt 5pt; vertical-align: middle; overflow-wrap: anywhere; }
 .grid th { background: #17365D; color: white; text-align: left; }

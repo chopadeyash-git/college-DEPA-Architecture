@@ -24,6 +24,8 @@ window.DF_PAGE_STUDENT_PENDING = (function () {
         try {
             pendingRequests = await window.DF_API.student.getPendingConsents();
             const list = Array.isArray(pendingRequests) ? pendingRequests : [];
+            const activeCount = list.filter(req => !isRequestExpired(req)).length;
+            const expiredCount = list.length - activeCount;
 
             const html = `
                 <!-- Page Header -->
@@ -33,9 +35,14 @@ window.DF_PAGE_STUDENT_PENDING = (function () {
                         <p class="text-muted small mb-0">Review incoming academic credential requests from external institutions and employers.</p>
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                        <span class="badge ${list.length > 0 ? 'bg-warning-subtle text-warning border border-warning-subtle' : 'bg-light text-muted border'} px-3 py-2 rounded-pill font-monospace small">
-                            ${list.length} PENDING INQUIRIES
+                        <span class="badge ${activeCount > 0 ? 'bg-warning-subtle text-warning border border-warning-subtle' : 'bg-light text-muted border'} px-3 py-2 rounded-pill font-monospace small">
+                            ${activeCount} ACTIVE INQUIRIES
                         </span>
+                        ${expiredCount > 0 ? `
+                            <span class="badge bg-secondary-subtle text-secondary border px-3 py-2 rounded-pill font-monospace small">
+                                ${expiredCount} EXPIRED
+                            </span>
+                        ` : ''}
                         <button class="btn btn-sm btn-outline-secondary" onclick="window.DF_PAGE_STUDENT_PENDING.render(document.getElementById('df-main-content'))">
                             <i class="bi bi-arrow-clockwise me-1"></i> Refresh
                         </button>
@@ -101,10 +108,18 @@ window.DF_PAGE_STUDENT_PENDING = (function () {
     function renderRequestCard(req, idx) {
         const reqId = req.id || req.consentRequestId;
         const requestedFields = Array.isArray(req.requestedFields) ? req.requestedFields : [];
+        const expired = isRequestExpired(req);
         const expiresAtStr = req.expiresAt ? new Date(req.expiresAt).toLocaleDateString() : '7 Days';
+        const statusBadge = expired
+            ? `<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded-pill font-monospace small">
+                    <i class="bi bi-x-circle-fill me-1"></i> EXPIRED${req.expiresAt ? `: ${expiresAtStr}` : ''}
+                </span>`
+            : `<span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2 rounded-pill font-monospace small">
+                    <i class="bi bi-clock-fill me-1"></i> EXPIRES: ${expiresAtStr}
+                </span>`;
 
         return `
-            <div class="card df-card border-0 shadow-sm mb-4" id="card-${reqId}" style="border-radius: var(--df-radius-lg); border-left: 4px solid #10B981 !important;">
+            <div class="card df-card border-0 shadow-sm mb-4" id="card-${reqId}" style="border-radius: var(--df-radius-lg); border-left: 4px solid ${expired ? '#6c757d' : '#10B981'} !important;">
                 <div class="card-header bg-transparent border-bottom p-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
                     <div class="d-flex align-items-center gap-3">
                         <div class="rounded-3 p-3 bg-light text-primary border d-flex align-items-center justify-content-center" style="width: 52px; height: 52px;">
@@ -120,9 +135,7 @@ window.DF_PAGE_STUDENT_PENDING = (function () {
                         </div>
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2 rounded-pill font-monospace small">
-                            <i class="bi bi-clock-fill me-1"></i> EXPIRES: ${expiresAtStr}
-                        </span>
+                        ${statusBadge}
                     </div>
                 </div>
 
@@ -163,7 +176,7 @@ window.DF_PAGE_STUDENT_PENDING = (function () {
                                     return `
                                         <div class="col-md-6">
                                             <div class="form-check p-2 bg-white rounded border d-flex align-items-start gap-2 h-100">
-                                                <input class="form-check-input ms-1 mt-1 field-checkbox" type="checkbox" value="${window.DF_UI.escapeHtml(f)}" id="chk-${reqId}-${f}">
+                                                <input class="form-check-input ms-1 mt-1 field-checkbox" type="checkbox" value="${window.DF_UI.escapeHtml(f)}" id="chk-${reqId}-${f}" ${expired ? 'disabled' : ''}>
                                                 <label class="form-check-label w-100 small" for="chk-${reqId}-${f}">
                                                     <span class="fw-bold text-dark d-block">${window.DF_UI.escapeHtml(meta.name)}</span>
                                                     <span class="text-muted font-monospace" style="font-size: 0.72rem;">[${window.DF_UI.escapeHtml(f)}]</span>
@@ -177,23 +190,52 @@ window.DF_PAGE_STUDENT_PENDING = (function () {
                     </div>
 
                     <!-- Action Controls -->
-                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 pt-3 border-top">
-                        <div class="text-muted small">
-                            <i class="bi bi-shield-lock-fill text-success me-1"></i>
-                            Approving signs an institutional identity assertion sealed by College A.
+                    ${expired ? `
+                        <div class="pt-3 border-top text-secondary small">
+                            <i class="bi bi-info-circle-fill me-1"></i>
+                            This consent request has expired and can no longer be approved or rejected.
                         </div>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-outline-danger btn-sm px-3 py-2 d-flex align-items-center gap-1" id="btn-reject-${reqId}">
-                                <i class="bi bi-x-circle"></i> Reject Request
-                            </button>
-                            <button class="btn btn-success btn-sm px-4 py-2 fw-semibold d-flex align-items-center gap-2" id="btn-approve-${reqId}" style="background-color: var(--df-primary); border-color: var(--df-primary);">
-                                <i class="bi bi-check-circle-fill"></i> Approve Selected Fields
-                            </button>
+                    ` : `
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 pt-3 border-top">
+                            <div class="text-muted small">
+                                <i class="bi bi-shield-lock-fill text-success me-1"></i>
+                                Approving signs an institutional identity assertion sealed by College A.
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-danger btn-sm px-3 py-2 d-flex align-items-center gap-1" id="btn-reject-${reqId}">
+                                    <i class="bi bi-x-circle"></i> Reject Request
+                                </button>
+                                <button class="btn btn-success btn-sm px-4 py-2 fw-semibold d-flex align-items-center gap-2" id="btn-approve-${reqId}" style="background-color: var(--df-primary); border-color: var(--df-primary);">
+                                    <i class="bi bi-check-circle-fill"></i> Approve Selected Fields
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    `}
                 </div>
             </div>
         `;
+    }
+
+    function isRequestExpired(req) {
+        if (typeof req.status === 'string' && req.status.toUpperCase() === 'EXPIRED') {
+            return true;
+        }
+
+        if (!req.expiresAt) {
+            return false;
+        }
+
+        const expiresAt = new Date(req.expiresAt).getTime();
+        return Number.isFinite(expiresAt) && expiresAt <= Date.now();
+    }
+
+    function refreshIfExpired(req, pageContainer) {
+        if (!isRequestExpired(req)) return false;
+
+        req.status = 'EXPIRED';
+        window.DF_UI.showToast('This consent request has expired and can no longer be actioned.', 'warning');
+        render(pageContainer);
+        return true;
     }
 
     function wireCardEvents(req, pageContainer) {
@@ -205,6 +247,8 @@ window.DF_PAGE_STUDENT_PENDING = (function () {
 
         if (approveBtn) {
             approveBtn.addEventListener('click', async () => {
+                if (refreshIfExpired(req, pageContainer)) return;
+
                 // Collect checked fields
                 const checkedBoxes = document.querySelectorAll(`#card-${reqId} .field-checkbox:checked`);
                 const approvedFields = Array.from(checkedBoxes).map(cb => cb.value);
@@ -227,6 +271,8 @@ window.DF_PAGE_STUDENT_PENDING = (function () {
                     confirmText: 'Confirm & Sign Approval',
                     confirmBtnClass: 'btn-success',
                     onConfirm: async () => {
+                        if (refreshIfExpired(req, pageContainer)) return;
+
                         approveBtn.disabled = true;
                         rejectBtn.disabled = true;
                         approveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Signing...';
@@ -248,12 +294,16 @@ window.DF_PAGE_STUDENT_PENDING = (function () {
 
         if (rejectBtn) {
             rejectBtn.addEventListener('click', () => {
+                if (refreshIfExpired(req, pageContainer)) return;
+
                 window.DF_UI.showConfirmDialog({
                     title: 'Reject Consent Request',
                     message: `Are you sure you want to reject this request from ${req.requesterOrganizationName || 'the requesting institution'}? No academic credentials will be disclosed, and no access grant will be generated.`,
                     confirmText: 'Confirm Rejection',
                     confirmBtnClass: 'btn-danger',
                     onConfirm: async () => {
+                        if (refreshIfExpired(req, pageContainer)) return;
+
                         approveBtn.disabled = true;
                         rejectBtn.disabled = true;
                         rejectBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Rejecting...';
@@ -276,4 +326,3 @@ window.DF_PAGE_STUDENT_PENDING = (function () {
 
     return { render };
 })();
-

@@ -128,10 +128,10 @@ class CollegeAConsentBridgeTest {
                     "requestedFields": ["CGPA", "TRANSCRIPT"],
                     "status": "PENDING",
                     "createdAt": "2026-10-30T10:00:00Z",
-                    "expiresAt": "2026-11-06T10:00:00Z"
+                    "expiresAt": "%s"
                   }
                 ]
-                """;
+                """.formatted(Instant.now().plusSeconds(3600));
 
         when(consentManagerClient.getPendingConsentRequestsRaw(anyString())).thenReturn(mockCmResponse);
 
@@ -142,6 +142,39 @@ class CollegeAConsentBridgeTest {
                 .andExpect(jsonPath("$[0].id").value("CREQ_TEST_01"))
                 .andExpect(jsonPath("$[0].requesterOrganizationCode").value("COLLEGE_B"))
                 .andExpect(jsonPath("$[0].requestedFields", contains("CGPA", "TRANSCRIPT")));
+    }
+
+    @Test
+    @DisplayName("College A: returns expired requests for read-only display in the consent inbox")
+    void testGetPendingConsentsIncludesExpiredRequests() throws Exception {
+        String mockCmResponse = """
+                [
+                  {
+                    "id": "CREQ_EXPIRED",
+                    "status": "PENDING",
+                    "expiresAt": "%s"
+                  },
+                  {
+                    "id": "CREQ_ACTIVE",
+                    "status": "PENDING",
+                    "expiresAt": "%s"
+                  },
+                  {
+                    "id": "CREQ_MARKED_EXPIRED",
+                    "status": "EXPIRED"
+                  }
+                ]
+                """.formatted(Instant.now().minusSeconds(3600), Instant.now().plusSeconds(3600));
+
+        when(consentManagerClient.getPendingConsentRequestsRaw(anyString())).thenReturn(mockCmResponse);
+
+        mockMvc.perform(get("/api/student/consents/pending")
+                        .header("Authorization", "Bearer " + studentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$[0].id").value("CREQ_EXPIRED"))
+                .andExpect(jsonPath("$[1].id").value("CREQ_ACTIVE"))
+                .andExpect(jsonPath("$[2].id").value("CREQ_MARKED_EXPIRED"));
     }
 
     @Test
