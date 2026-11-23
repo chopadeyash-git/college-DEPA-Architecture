@@ -1,7 +1,7 @@
 databases:
   - name: depa-postgres
     databaseName: consent_manager_db_fyp
-    user: postgres
+    user: depa_admin
     plan: free
 
 services:
@@ -17,10 +17,26 @@ services:
     envVars:
       - key: JAVA_TOOL_OPTIONS
         value: "-XX:+UseSerialGC -Xmx320m -XX:TieredStopAtLevel=1"
-      - key: SPRING_DATASOURCE_URL
+      - key: SPRING_DATASOURCE_HOST
         fromDatabase:
           name: depa-postgres
-          property: connectionString
+          property: host
+      - key: SPRING_DATASOURCE_PORT
+        fromDatabase:
+          name: depa-postgres
+          property: port
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: depa-postgres
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: depa-postgres
+          property: password
+      - key: SPRING_DATASOURCE_DB
+        fromDatabase:
+          name: depa-postgres
+          property: database
       - key: APP_JWT_SECRET
         value: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
 
@@ -44,10 +60,26 @@ services:
         value: "https://depa-consent-manager.onrender.com"
       - key: APP_INTERNAL_API_KEY
         value: "A-INTERNAL-SECRET-KEY"
-      - key: SPRING_DATASOURCE_URL
+      - key: SPRING_DATASOURCE_HOST
         fromDatabase:
           name: depa-postgres
-          property: connectionString
+          property: host
+      - key: SPRING_DATASOURCE_PORT
+        fromDatabase:
+          name: depa-postgres
+          property: port
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: depa-postgres
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: depa-postgres
+          property: password
+      - key: SPRING_DATASOURCE_DB
+        fromDatabase:
+          name: depa-postgres
+          property: database
 
   # =============================================================
   # 3. College B University (Inquiring Institution / Consumer)
@@ -69,7 +101,23 @@ services:
         value: "https://depa-consent-manager.onrender.com"
       - key: APP_INTERNAL_API_KEY
         value: "B-INTERNAL-SECRET-KEY"
-      - key: SPRING_DATASOURCE_URL
+      - key: SPRING_DATASOURCE_HOST
         fromDatabase:
           name: depa-postgres
-          property: connectionString
+          property: host
+      - key: SPRING_DATASOURCE_PORT
+        fromDatabase:
+          name: depa-postgres
+          property: port
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: depa-postgres
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: depa-postgres
+          property: password
+      - key: SPRING_DATASOURCE_DB
+        fromDatabase:
+          name: depa-postgres
+          property: database
