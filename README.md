@@ -133,5 +133,3 @@ node tools/verify_stage7_final_acceptance.js
 
 ---
 
-## 📜 License & Acknowledgements
-Developed as a Final Year Project researching and implementing the Data Empowerment and Protection Architecture (DEPA) for academic credentials.
