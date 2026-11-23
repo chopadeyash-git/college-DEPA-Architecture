@@ -80,6 +80,8 @@ services:
         fromDatabase:
           name: depa-postgres
           property: database
+      - key: SPRING_JPA_DEFAULT_SCHEMA
+        value: college_a
 
   # =============================================================
   # 3. College B University (Inquiring Institution / Consumer)
@@ -121,3 +123,5 @@ services:
         fromDatabase:
           name: depa-postgres
           property: database
+      - key: SPRING_JPA_DEFAULT_SCHEMA
+        value: college_b

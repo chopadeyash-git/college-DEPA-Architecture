@@ -15,10 +15,7 @@ ENV PORT=8081 \
     APP_COLLEGE_CODE=COLLEGE_A \
     APP_COLLEGE_NAME="College A University" \
     APP_CM_BASE_URL="http://server1-cm:8095" \
-    APP_INTERNAL_API_KEY="A-INTERNAL-SECRET-KEY" \
-    SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/college_a_db" \
-    SPRING_DATASOURCE_USERNAME="postgres" \
-    SPRING_DATASOURCE_PASSWORD="root"
+    APP_INTERNAL_API_KEY="A-INTERNAL-SECRET-KEY"
 
 COPY --from=build /app/college-a/backend/target/*.jar app.jar
 

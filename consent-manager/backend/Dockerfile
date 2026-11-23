@@ -11,10 +11,7 @@ RUN mvn clean package -pl consent-manager/backend -am -DskipTests
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-ENV PORT=8095 \
-    SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/consent_manager_db_fyp" \
-    SPRING_DATASOURCE_USERNAME="postgres" \
-    SPRING_DATASOURCE_PASSWORD="root"
+ENV PORT=8095
 
 COPY --from=build /app/consent-manager/backend/target/*.jar app.jar
 
