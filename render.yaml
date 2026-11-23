@@ -1,0 +1,75 @@
+databases:
+  - name: depa-postgres
+    databaseName: consent_manager_db_fyp
+    user: postgres
+    plan: free
+
+services:
+  # =============================================================
+  # 1. Consent Manager Service (Trust Anchor & Control Plane)
+  # =============================================================
+  - type: web
+    name: depa-consent-manager
+    runtime: docker
+    dockerfilePath: consent-manager/backend/Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: JAVA_TOOL_OPTIONS
+        value: "-XX:+UseSerialGC -Xmx320m -XX:TieredStopAtLevel=1"
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: depa-postgres
+          property: connectionString
+      - key: APP_JWT_SECRET
+        value: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+
+  # =============================================================
+  # 2. College A University (Data Custodian / Provider)
+  # =============================================================
+  - type: web
+    name: depa-college-a
+    runtime: docker
+    dockerfilePath: college-a/backend/Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: JAVA_TOOL_OPTIONS
+        value: "-XX:+UseSerialGC -Xmx320m -XX:TieredStopAtLevel=1"
+      - key: APP_COLLEGE_CODE
+        value: COLLEGE_A
+      - key: APP_COLLEGE_NAME
+        value: "College A University"
+      - key: APP_CM_BASE_URL
+        value: "https://depa-consent-manager.onrender.com"
+      - key: APP_INTERNAL_API_KEY
+        value: "A-INTERNAL-SECRET-KEY"
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: depa-postgres
+          property: connectionString
+
+  # =============================================================
+  # 3. College B University (Inquiring Institution / Consumer)
+  # =============================================================
+  - type: web
+    name: depa-college-b
+    runtime: docker
+    dockerfilePath: college-b/backend/Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: JAVA_TOOL_OPTIONS
+        value: "-XX:+UseSerialGC -Xmx320m -XX:TieredStopAtLevel=1"
+      - key: APP_COLLEGE_CODE
+        value: COLLEGE_B
+      - key: APP_COLLEGE_NAME
+        value: "College B University"
+      - key: APP_CM_BASE_URL
+        value: "https://depa-consent-manager.onrender.com"
+      - key: APP_INTERNAL_API_KEY
+        value: "B-INTERNAL-SECRET-KEY"
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: depa-postgres
+          property: connectionString

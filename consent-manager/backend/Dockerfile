@@ -4,6 +4,8 @@ WORKDIR /app
 
 COPY pom.xml .
 COPY consent-manager/backend consent-manager/backend
+COPY college-a/backend college-a/backend
+COPY college-b/backend college-b/backend
 RUN mvn clean package -pl consent-manager/backend -am -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine

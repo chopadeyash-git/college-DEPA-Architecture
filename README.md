@@ -121,13 +121,15 @@ node tools/verify_stage7_final_acceptance.js
 
 ## 🔑 Demonstration Credentials
 
-| Portal | URL | Role | Username | Password |
+| Portal | URL | Role | Email / Identifier | Password |
 | :--- | :--- | :--- | :--- | :--- |
-| **Consent Manager** | `http://localhost:3001` | Super Admin | `admin` | `Admin@123` |
-| **Consent Manager** | `http://localhost:3001/org-admin-login.html` | Org Admin (Col A) | `admin_cola` | `Admin@123` |
-| **Consent Manager** | `http://localhost:3001/org-admin-login.html` | Org Admin (Col B) | `admin_colb` | `Admin@123` |
-| **College A Portal** | `http://localhost:3002` | Registrar | `admin_cola` | `Admin@123` |
-| **College B Portal** | `http://localhost:3003` | Inquirer / Officer | `colb_admin` | `Admin@123` |
+| **Consent Manager** | `http://localhost:3001` | Super Admin | `superadmin@depa.cm` | `SuperAdmin@123` |
+| **Consent Manager** | `http://localhost:3001/#/login/org-admin` | Org Admin (Col A) | `admin@collegea.edu` | `CollegeAdmin123` |
+| **Consent Manager** | `http://localhost:3001/#/login/org-admin` | Org Admin (Col B) | `admin@collegeb.edu` | `CollegeAdmin123` |
+| **College A Portal** | `http://localhost:3002` | Admin / Dean | `dean@collegea.edu` | `OrgAdmin@123` |
+| **College A Portal** | `http://localhost:3002/#/login-student` | Student (Alice) | `student1@collegea.edu` | `StudentPassword123` |
+| **College B Portal** | `http://localhost:3003` | Admin / Dean / Inquirer | `dean@collegeb.edu` | `OrgAdmin@123` |
+| **College B Portal** | `http://localhost:3003/#/login-student` | Student (Alice) | `alice@collegeb.edu` | `StudentPassword123` |
 
 ---
 

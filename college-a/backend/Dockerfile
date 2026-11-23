@@ -3,7 +3,9 @@ FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
 
 COPY pom.xml .
+COPY consent-manager/backend consent-manager/backend
 COPY college-a/backend college-a/backend
+COPY college-b/backend college-b/backend
 RUN mvn clean package -pl college-a/backend -am -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
