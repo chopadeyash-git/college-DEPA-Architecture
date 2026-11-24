@@ -1,5 +1,5 @@
 # DEPA Academic Credential Trust & Consent Network
-**Final Year Project — Distributed Consent & Data Governance Architecture**
+**Distributed Consent & Data Governance Architecture**
 
 ---
 
